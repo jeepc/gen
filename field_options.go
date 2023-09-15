@@ -138,10 +138,10 @@ var (
 		}
 	}
 	// FieldJSONTagWithNS specify JSON tag with name strategy
-	FieldJSONTagWithNS = func(schemaName func(columnName string) (tagContent string)) model.ModifyFieldOpt {
+	FieldJSONTagWithNS = func(schemaName func(columnName string, columnType string) (tagContent string)) model.ModifyFieldOpt {
 		return func(m *model.Field) *model.Field {
 			if schemaName != nil {
-				m.Tag.Set(field.TagKeyJson, schemaName(m.ColumnName))
+				m.Tag.Set(field.TagKeyJson, schemaName(m.ColumnName, m.Type))
 
 			}
 			return m
