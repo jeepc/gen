@@ -142,7 +142,11 @@ func TestExpr_Build(t *testing.T) {
 			Result: "COUNT(DISTINCT `user`.*)",
 		},
 		// ======================== raw ========================
-
+		{
+			Expr:         field.NewRaw("user.password"),
+			ExpectedVars: []interface{}{},
+			Result:       "user.password",
+		},
 		// ======================== integer ========================
 		{
 			Expr:   field.NewUint("", "id"),
