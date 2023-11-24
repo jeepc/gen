@@ -28,13 +28,8 @@ var (
 // ======================== raw field =======================
 
 // NewRaw create new raw field
-func NewRaw(table, column string, opts ...Option) Field {
-	col := clause.Column{Table: table, Name: column}
-	col.Raw = true
-	for _, opt := range opts {
-		col = opt(col)
-	}
-	return Field{expr: expr{col: col}}
+func NewRaw(rawSql string) Field {
+	return Field{expr: expr{e: clause.Expr{SQL: rawSql}}}
 }
 
 // ======================== generic field =======================
