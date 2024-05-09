@@ -6,7 +6,6 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -389,7 +388,7 @@ func (g *Generator) generateSingleQueryFile(data *genInfo) (err error) {
 	}
 	err = render(tmpl.Header, &buf, map[string]interface{}{
 		"Package":        g.queryPkgName,
-		"ImportPkgPaths": importList.Add(structPkgPath).Add(getImportPkgPaths(data)...).Paths(),
+		"ImportPkgPaths": importList.Add(g.importPkgPaths...).Add(structPkgPath).Add(getImportPkgPaths(data)...).Paths(),
 	})
 	if err != nil {
 		return err
@@ -567,7 +566,7 @@ func (g *Generator) output(fileName string, content []byte) error {
 		}
 		return fmt.Errorf("cannot format file: %w", err)
 	}
-	return ioutil.WriteFile(fileName, result, 0640)
+	return os.WriteFile(fileName, result, 0640)
 }
 
 func (g *Generator) pushQueryStructMeta(meta *generate.QueryStructMeta) (*genInfo, error) {
