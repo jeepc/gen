@@ -41,6 +41,8 @@ Install GEN as a binary tool
         generate unit test for query code
   -fieldSignable
         detect integer field's unsigned type, adjust generated data type
+  -enablePostgresFTS
+        enable PostgreSQL full text search support
 
 ```
 #### c

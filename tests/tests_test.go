@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"gorm.io/driver/mysql"
+	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gen"
 	"gorm.io/gorm"
@@ -14,7 +15,7 @@ import (
 
 const (
 	mysqlDSN     = "gen:gen@tcp(localhost:9910)/gen?charset=utf8&parseTime=True&loc=Local"
-	postgresDSN  = "user=gen password=gen dbname=gen host=localhost port=9920 sslmode=disable TimeZone=Asia/Shanghai"
+	postgresDSN  = "host=localhost user=gen password=gen dbname=gen port=5432 sslmode=disable TimeZone=Asia/Shanghai"
 	sqlserverDSN = "sqlserver://gen:LoremIpsum86@localhost:9930?database=gen"
 )
 
@@ -62,6 +63,12 @@ func OpenTestConnection() (db *gorm.DB, err error) {
 			dbDSN = mysqlDSN
 		}
 		db, err = gorm.Open(mysql.Open(dbDSN), &gorm.Config{})
+	case "postgres":
+		log.Println("testing postgres...")
+		if dbDSN == "" {
+			dbDSN = postgresDSN
+		}
+		db, err = gorm.Open(postgres.Open(dbDSN), &gorm.Config{})
 	default:
 		log.Println("testing sqlite3...")
 		db, err = gorm.Open(sqlite.Open(filepath.Join(os.TempDir(), "gorm.db")), &gorm.Config{})

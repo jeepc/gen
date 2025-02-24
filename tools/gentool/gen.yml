@@ -30,3 +30,5 @@ database:
   fieldWithTypeTag  : false
   # detect integer field's unsigned type, adjust generated data type
   fieldSignable  : false
+  # enable PostgreSQL full text search support
+  enablePostgresFTS: false

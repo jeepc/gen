@@ -34,6 +34,7 @@ type DO struct {
 	tableName string
 
 	backfillData interface{}
+	tsConfig     TSConfig
 }
 
 func (d DO) getInstance(db *gorm.DB) *DO {
@@ -1059,4 +1060,102 @@ func (cs Columns) Lte(query SubQuery) field.Expr {
 		return field.EmptyExpr()
 	}
 	return field.CompareSubQuery(field.LteOp, cs[0], query.underlyingDB())
+}
+
+// TSConfig 配置全文检索参数
+type TSConfig struct {
+	Language string   // 分词字典语言,如'english','chinese'等
+	Weights  []string // 字段权重,如'A','B','C','D'
+}
+
+// TSQuery 执行全文检索
+// language: 分词字典语言,默认'english'
+// columns: 要检索的字段
+func (d *DO) TSQuery(query string, columns ...field.Expr) *DO {
+	if len(columns) == 0 {
+		return d
+	}
+
+	// 构建 to_tsvector 表达式
+	var vectorExprs []string
+	for i, col := range columns {
+		weight := ""
+		if i < len(d.tsConfig.Weights) {
+			weight = fmt.Sprintf("setweight(to_tsvector('%s', %s), '%s')",
+				d.tsConfig.Language, col.ColumnName(), d.tsConfig.Weights[i])
+		} else {
+			weight = fmt.Sprintf("to_tsvector('%s', %s)",
+				d.tsConfig.Language, col.ColumnName())
+		}
+		vectorExprs = append(vectorExprs, weight)
+	}
+	vectorExpr := strings.Join(vectorExprs, " || ")
+
+	// 构建 to_tsquery 表达式
+	queryExpr := fmt.Sprintf("to_tsquery('%s', ?)", d.tsConfig.Language)
+
+	// 添加全文检索条件
+	return d.getInstance(d.db.Where(
+		clause.Expr{SQL: fmt.Sprintf("%s @@ %s", vectorExpr, queryExpr), Vars: []interface{}{query}},
+	))
+}
+
+// TSRank 按全文检索相关度排序
+func (d *DO) TSRank(query string, columns ...field.Expr) *DO {
+	if len(columns) == 0 {
+		return d
+	}
+
+	// 构建 to_tsvector 表达式
+	var vectorExprs []string
+	for i, col := range columns {
+		weight := ""
+		if i < len(d.tsConfig.Weights) {
+			weight = fmt.Sprintf("setweight(to_tsvector('%s', %s), '%s')",
+				d.tsConfig.Language, col.ColumnName(), d.tsConfig.Weights[i])
+		} else {
+			weight = fmt.Sprintf("to_tsvector('%s', %s)",
+				d.tsConfig.Language, col.ColumnName())
+		}
+		vectorExprs = append(vectorExprs, weight)
+	}
+	vectorExpr := strings.Join(vectorExprs, " || ")
+
+	// 构建 to_tsquery 表达式
+	queryExpr := fmt.Sprintf("to_tsquery('%s', ?)", d.tsConfig.Language)
+
+	// 添加 ts_rank 排序
+	rankExpr := fmt.Sprintf("ts_rank(%s, %s)", vectorExpr, queryExpr)
+
+	return d.getInstance(d.db.Order(
+		clause.Expr{SQL: rankExpr + " DESC", Vars: []interface{}{query}},
+	))
+}
+
+// TSHeadline 获取匹配的文本片段
+func (d *DO) TSHeadline(query string, column field.Expr) *DO {
+	if column == nil {
+		return d
+	}
+
+	// 构建 ts_headline 表达式
+	headlineExpr := fmt.Sprintf(
+		"ts_headline('%s', %s, to_tsquery('%s', ?), 'StartSel=<b>, StopSel=</b>, MaxWords=50, MinWords=25')",
+		d.tsConfig.Language,
+		column.ColumnName(),
+		d.tsConfig.Language,
+	)
+
+	return d.getInstance(d.db.Select(
+		clause.Expr{SQL: headlineExpr + " as headline", Vars: []interface{}{query}},
+	))
+}
+
+// WithTSConfig 设置全文检索配置
+func (d *DO) WithTSConfig(config TSConfig) *DO {
+	if config.Language == "" {
+		config.Language = "english"
+	}
+	d.tsConfig = config
+	return d
 }

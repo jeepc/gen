@@ -83,9 +83,13 @@ CREATE TABLE `users` (
   `alive` tinyint(1) DEFAULT NULL COMMENT 'multiline\nline1\nline2',
   `company_id` bigint(20) unsigned DEFAULT '666',
   `private_url` varchar(255) DEFAULT 'https://a.b.c ',
+  `bio` TEXT,
+  `description` TEXT,
   PRIMARY KEY (`id`),
   KEY `idx_name` (`name`) USING BTREE,
-  KEY `idx_name_company_id` (`name`,`company_id`)
+  KEY `idx_name_company_id` (`name`,`company_id`),
+  KEY `users_bio_fts_idx` (`bio`),
+  KEY `users_description_fts_idx` (`description`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
